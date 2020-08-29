@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+xmlns:context="http://www.springframework.org/schema/context"
+xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd" >
+
+ 	<context:component-scan base-package="com.training.restfil.interact" />
+ 	<context:annotation-config />
+ 	
+<!--  	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">  
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"></property>  
+		<property name="url" value="jdbc:oracle:thin:@ed10db01-vip.uhc.com:1521/ogmdv01.uhc.com"></property>  
+		<property name="username" value="uhg_001301972"></property>  
+		<property name="password" value="Kri%022o"></property>   
+	</bean> -->
+<!-- 	
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource" />
+	</bean> 
+	
+	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+    	<property name="jndiName" value="java:/HariDS"/>
+		<property name="lookupOnStartup" value="false" />
+        <property name="cache" value="true" />
+        <property name="proxyInterface" value="javax.sql.DataSource" />
+	</bean> -->
+	     
+</beans>
+
