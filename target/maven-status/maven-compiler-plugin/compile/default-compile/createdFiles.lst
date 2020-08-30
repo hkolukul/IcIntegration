@@ -1,1 +1,3 @@
 com\training\restfil\interact\controller\MainController.class
+com\training\restfil\interact\model\ChannelConstants.class
+com\training\restfil\interact\model\Member.class

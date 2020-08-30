@@ -1,7 +1,8 @@
 package com.training.restfil.interact.controller;
 
 import javax.annotation.PostConstruct;
-import javax.ws.rs.GET;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
@@ -11,8 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.json.JSONException;
+//import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
+import com.training.restfil.interact.model.ChannelConstants;
+import com.training.restfil.interact.model.Member;
 import com.unicacorp.interact.api.AdvisoryMessage;
 import com.unicacorp.interact.api.BatchResponse;
 import com.unicacorp.interact.api.Command;
@@ -25,29 +29,25 @@ import com.unicacorp.interact.api.Response;
 import com.unicacorp.interact.api.rest.RestClientConnector;
 
 @Path("/offers")
-public class MainController {
+public class MainController implements ChannelConstants {
 
 	@PostConstruct
 	public void init() {
 		SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
 	}
 
-	String url = "http://dev-ogm-int-rt-s1.optum.com:9080/interact/servlet/RestServlet";
-	// url += "";
-	String sessionId = String.valueOf(System.currentTimeMillis());
-	String icName = "Hari_Ic";
-	String ipName = "ip_credit";
-	int numberRequested = 5;
-	String eventName = "contact";
 
-	@GET
+	@POST
+	@Consumes({"application/json"})
 	@Produces("text/html")
-	public String getOffers() throws IOException, JSONException{
+	public String getOffers(Member member) throws IOException, JSONException{
+		
+		String sessionId = String.valueOf(System.currentTimeMillis());
 
 		System.out.println("inside getoffer method");
 		List<Command> cmds = new ArrayList<Command>();
 
-		cmds.add(0, createStartSessionCommand(icName));
+		cmds.add(0, createStartSessionCommand(icName,member));
 		cmds.add(1, createGetOffersCommand(ipName, numberRequested));
 		cmds.add(2, createGetProfileCommand());
 		cmds.add(3, createEndSessionCommand());
@@ -133,24 +133,24 @@ public class MainController {
 
 	
 	
-	private static Command createStartSessionCommand(String icName)  throws RemoteException{
+	private static Command createStartSessionCommand(String icName, Member member)  throws RemoteException{
 		CommandImpl cmd = new CommandImpl();
 		cmd.setMethodIdentifier(Command.COMMAND_STARTSESSION);
 		cmd.setInteractiveChannel(icName);
 		cmd.setAudienceLevel("MDM_Person");
 		cmd.setAudienceID(new NameValuePairImpl[] {
-				new NameValuePairImpl("MDM_PERSON_ID", NameValuePair.DATA_TYPE_STRING, "1") });
+				new NameValuePairImpl("MDM_PERSON_ID", NameValuePair.DATA_TYPE_STRING, member.getMdm_person_id()) });
 
 		NameValuePair userId = new NameValuePairImpl();
 		userId.setName("user_id");
-		userId.setValueAsString("hkolukul");
+		userId.setValueAsString(member.getUser_Id());
 		userId.setValueDataType(NameValuePair.DATA_TYPE_STRING);
 
 		// NameValuePair userId = new NameValuePairImpl("user_id","string","hkolukul");
 
 		NameValuePair policyId = new NameValuePairImpl();
 		policyId.setName("policy_id");
-		policyId.setValueAsString("00001234");
+		policyId.setValueAsString(member.getPolicy_id());
 		policyId.setValueDataType(NameValuePair.DATA_TYPE_STRING);
 
 		NameValuePairImpl[] eventParameters = { (NameValuePairImpl) userId, (NameValuePairImpl) policyId };
