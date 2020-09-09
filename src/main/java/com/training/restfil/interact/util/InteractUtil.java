@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import org.springframework.stereotype.Component;
 
 import com.training.restfil.interact.model.Member;
+import com.training.restfil.interact.model.PostEvent;
 import com.unicacorp.interact.api.Command;
 import com.unicacorp.interact.api.CommandImpl;
 import com.unicacorp.interact.api.NameValuePair;
@@ -56,6 +57,42 @@ public class InteractUtil {
 		return cmd;
 	}
 
+	
+	public Command createPostEventCommand2(PostEvent postEvent){
+		
+		
+		CommandImpl cmd = new CommandImpl();
+		cmd.setMethodIdentifier(Command.COMMAND_POSTEVENT);
+		cmd.setEvent(postEvent.getEventName());
+		
+		NameValuePair treatmentCode = new NameValuePairImpl();
+		treatmentCode.setName("UACIOfferTrackingCode");
+		treatmentCode.setValueAsString(postEvent.getTreatmentCode());
+		treatmentCode.setValueDataType(NameValuePair.DATA_TYPE_STRING);
+		
+		NameValuePair eventName = new NameValuePairImpl();
+		eventName.setName("eventName");
+		eventName.setValueAsString(postEvent.getEventName());
+		eventName.setValueDataType(NameValuePair.DATA_TYPE_STRING);
+		
+		NameValuePairImpl[] eventParameters =  { (NameValuePairImpl) treatmentCode,(NameValuePairImpl) eventName};		
+		cmd.setEventParameters(eventParameters);
+		
+		if(postEvent.getEventName().equals("reject")) {
+		NameValuePair responseTypeEXP = new NameValuePairImpl();
+		responseTypeEXP.setName("UACIResponseTypeCode");
+		responseTypeEXP.setValueAsString("RCT");
+		responseTypeEXP.setValueDataType(NameValuePair.DATA_TYPE_STRING);
+		
+		NameValuePairImpl[] eventParameters2  = {(NameValuePairImpl) treatmentCode,(NameValuePairImpl) eventName, (NameValuePairImpl) responseTypeEXP};
+		cmd.setEventParameters(eventParameters2);
+		}
+
+		
+		return cmd;
+	}
+	
+	
 	public Command createGetProfileCommand() {
 		CommandImpl cmd = new CommandImpl();
 		cmd.setMethodIdentifier(Command.COMMAND_GETPROFILE);

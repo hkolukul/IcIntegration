@@ -17,10 +17,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
-import com.training.restfil.interact.model.ChannelConstants;
+import com.training.restfil.interact.constants.ChannelConstants;
+import com.training.restfil.interact.model.EventResponse;
 import com.training.restfil.interact.model.Member;
 import com.training.restfil.interact.model.Offers;
+import com.training.restfil.interact.model.PostEvent;
 import com.training.restfil.interact.model.RestResponse;
+import com.training.restfil.interact.processor.InteractProcessor;
 import com.training.restfil.interact.util.InteractUtil;
 
 
@@ -45,12 +48,14 @@ public class MainController implements ChannelConstants {
 	@Qualifier("interactUtil")
 	InteractUtil interactUtil;
 	
-//	@Autowired
-//	Offers offers;
+	@Autowired
+	InteractProcessor interactProcessor;
 	
 	@Autowired
 	RestResponse restResponse;
 	
+	@Autowired
+	EventResponse eventResponse;
 	
 	@POST
 	@Consumes({"application/json"})
@@ -59,7 +64,7 @@ public class MainController implements ChannelConstants {
 		
 		String sessionId = String.valueOf(System.currentTimeMillis());
 
-		System.out.println("inside getoffer method");
+//		System.out.println("inside getoffer method");
 		List<Command> cmds = new ArrayList<Command>();
 		Date EffectiveDate = new Date();
 		Date ExpirationDate = new Date();
@@ -69,18 +74,23 @@ public class MainController implements ChannelConstants {
 		cmds.add(2, interactUtil.createGetProfileCommand());
 		cmds.add(3, interactUtil.createEndSessionCommand());
 		cmds.add(4, interactUtil.createPostEventCommand(eventName));
+		
 
 		try {
 
 			RestClientConnector.initialize();
 			RestClientConnector connector = new RestClientConnector(url);
-			Command[] cmd = { cmds.get(0) };
-			BatchResponse start_response;
-			start_response = connector.executeBatch(sessionId, cmd, null, null);
-			System.out.println("Start session " + start_response.getBatchStatusCode());
-			Response[] responses = start_response.getResponses();
 
-			if (start_response.getBatchStatusCode() > 0) {
+			//Start session
+			Command[] cmd = { cmds.get(0) };
+			BatchResponse batchResponse = interactProcessor.executeBatchMethod(sessionId,cmd,connector);
+			
+//			System.out.println("Start session " + start_response.getBatchStatusCode());
+			Response[] responses = batchResponse.getResponses();
+
+			
+			//Handle errors
+			if (batchResponse.getBatchStatusCode() > 0) {
 				for (Response res : responses) {
 					AdvisoryMessage[] ams = res.getAdvisoryMessages();
 					for (AdvisoryMessage am : ams) {
@@ -89,14 +99,15 @@ public class MainController implements ChannelConstants {
 				}
 			}
 
+			//Start session, PostEvent
 			Command[] cmd1 = { cmds.get(1), cmds.get(4) };
 			BatchResponse response = connector.executeBatch(sessionId, cmd1, null, null);
 			System.out.println("Execute batch " + response.getBatchStatusCode());
-			responses = response.getResponses();
+			responses = response.getResponses(); // load response into responses[] array
 			
 			List<Offers> offersList = new ArrayList<Offers>();
 
-			
+			//process each response
 			for (Response res : responses) {
 				OfferList oflist = res.getOfferList();
 				if (oflist != null) {
@@ -158,20 +169,49 @@ public class MainController implements ChannelConstants {
 				}
 				
 				restResponse.setOffers(offersList);
+				restResponse.setSession_id(sessionId);
 
 			}
 
-			System.out.println("----------------------------------------------");
-
-			Command[] cmd_end = { cmds.get(3) };
-			response = connector.executeBatch(sessionId, cmd_end, null, null);
-			System.out.println("End " + response.getBatchStatusCode());
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		return restResponse;
+	}
+	
+	
+	
+	
+	@Path("/response")
+	@POST
+	@Consumes({"application/json"})
+	@Produces({"application/json"})	
+	public EventResponse postEvent(PostEvent postEvent) throws IOException, JSONException{
+		
+		List<Command> cmds = new ArrayList<Command>();
+		
+		RestClientConnector connector = new RestClientConnector(url);
+		
+		cmds.add(0, interactUtil.createEndSessionCommand());
+		cmds.add(1, interactUtil.createPostEventCommand2(postEvent));
+		
+		Command[] cmd_pe = { cmds.get(1) };
+		BatchResponse batchResponse = interactProcessor.executeBatchMethod(postEvent.getSessionId(),cmd_pe,connector);
+		System.out.println("Post event status " + batchResponse.getBatchStatusCode());
+		int peStatus= batchResponse.getBatchStatusCode();
+		
+		
+		Command[] cmd_end = { cmds.get(0) };
+		batchResponse = interactProcessor.executeBatchMethod(postEvent.getSessionId(),cmd_end,connector);
+		System.out.println("End " + batchResponse.getBatchStatusCode());
+		int endStatus= batchResponse.getBatchStatusCode();
+		
+		eventResponse.setPeStatus(peStatus);
+		eventResponse.setEndStatus(endStatus);
+				
+		return eventResponse;	
 	}
 
 }

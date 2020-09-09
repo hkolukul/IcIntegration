@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 @XmlRootElement
 public class RestResponse {
 	
+	String session_id;
 	String mdm_person_id;
 	String firstname;
 	String lastname;
@@ -18,6 +19,12 @@ public class RestResponse {
 	String policy_id;
 	String city;
 	
+	public String getSession_id() {
+		return session_id;
+	}
+	public void setSession_id(String session_id) {
+		this.session_id = session_id;
+	}
 	public String getFirstname() {
 		return firstname;
 	}
