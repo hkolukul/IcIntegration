@@ -72,8 +72,6 @@ public class MainController implements ChannelConstants {
 		cmds.add(0, interactUtil.createStartSessionCommand(icName,member));
 		cmds.add(1, interactUtil.createGetOffersCommand(ipName, numberRequested));
 		cmds.add(2, interactUtil.createGetProfileCommand());
-		cmds.add(3, interactUtil.createEndSessionCommand());
-		cmds.add(4, interactUtil.createPostEventCommand(eventName));
 		
 
 		try {
@@ -85,7 +83,7 @@ public class MainController implements ChannelConstants {
 			Command[] cmd = { cmds.get(0) };
 			BatchResponse batchResponse = interactProcessor.executeBatchMethod(sessionId,cmd,connector);
 			
-//			System.out.println("Start session " + start_response.getBatchStatusCode());
+			//System.out.println("Start session " + start_response.getBatchStatusCode());
 			Response[] responses = batchResponse.getResponses();
 
 			
@@ -99,15 +97,17 @@ public class MainController implements ChannelConstants {
 				}
 			}
 
-			//Start session, PostEvent
-			Command[] cmd1 = { cmds.get(1), cmds.get(4) };
+			//GetOffers
+			Command[] cmd1 = { cmds.get(1) };
 			BatchResponse response = connector.executeBatch(sessionId, cmd1, null, null);
 			System.out.println("Execute batch " + response.getBatchStatusCode());
 			responses = response.getResponses(); // load response into responses[] array
 			
 			List<Offers> offersList = new ArrayList<Offers>();
 
-			//process each response
+			//process each response OfferList
+			//BatchResponse (getRespose()) --> Response[] -- > each Response (getOfferList()) --> OfferList (getRecommendedOffers()) --> 
+			//    each getRecommendedOffers() -- >Offer (getAdditionalAttributes()) --> NameValuePair[] attributes
 			for (Response res : responses) {
 				OfferList oflist = res.getOfferList();
 				if (oflist != null) {
@@ -115,11 +115,10 @@ public class MainController implements ChannelConstants {
 						if (oflist.getRecommendedOffers()[i] != null) {
 							System.out.println("value is i " + i);
 							Offer ofs = oflist.getRecommendedOffers()[i];
-							
-							
-//							System.out.println(ofs.getOfferName());
-//							System.out.println(ofs.getTreatmentCode());
-//							System.out.println("score " + ofs.getScore());
+														
+							//							System.out.println(ofs.getOfferName());
+							//							System.out.println(ofs.getTreatmentCode());
+							//							System.out.println("score " + ofs.getScore());
 							
 							NameValuePair[] attributes = ofs.getAdditionalAttributes();
 							for (NameValuePair attribute : attributes) {
@@ -134,17 +133,20 @@ public class MainController implements ChannelConstants {
 								if (attribute.getName().equalsIgnoreCase("ExpirationDate"))
 									ExpirationDate=attribute.getValueAsDate();								
 							}
-//							System.out.println("----------------------------------------------");
 							offersList.add(new Offers(ofs.getOfferName(),ofs.getScore(),ofs.getTreatmentCode(),EffectiveDate.toString(),ExpirationDate.toString()));
 						}
 					}
 				}
 			}
 
+			//Get profile call
 			Command[] cmd_profile = { cmds.get(2) };
 			response = connector.executeBatch(sessionId, cmd_profile, null, null);
 			System.out.println("Profile " + response.getBatchStatusCode());
 			responses = response.getResponses();
+			
+			//BatchResponse (getRespose()) --> Response[] -- > each Response.getProfileRecord() --> NameValueOair[]
+			
 			for (Response res : responses) {
 				NameValuePair[] npvs = res.getProfileRecord();
 				for (NameValuePair attribute : npvs) {
@@ -181,6 +183,29 @@ public class MainController implements ChannelConstants {
 		return restResponse;
 	}
 	
+	@Path("/contact")
+	@POST
+	@Consumes({"application/json"})
+	@Produces({"application/json"})	
+	public EventResponse contactEvent(PostEvent postEvent) throws IOException, JSONException{
+	
+		List<Command> cmds = new ArrayList<Command>();
+		RestClientConnector connector = new RestClientConnector(url);	
+		cmds.add(0, interactUtil.createPostEventCommand(postEvent));
+		
+		System.out.println(postEvent.getEventName());
+		System.out.println(postEvent.getSessionId());
+		System.out.println(postEvent.getTreatmentCode());
+		
+		Command[] cmd_ce = { cmds.get(0) };
+		BatchResponse batchResponse = interactProcessor.executeBatchMethod(postEvent.getSessionId(),cmd_ce,connector);
+		System.out.println("Post event status " + batchResponse.getBatchStatusCode());
+	
+		eventResponse.setPeStatus(batchResponse.getBatchStatusCode());
+
+		
+	return eventResponse;
+	};
 	
 	
 	
@@ -194,24 +219,36 @@ public class MainController implements ChannelConstants {
 		
 		RestClientConnector connector = new RestClientConnector(url);
 		
-		cmds.add(0, interactUtil.createEndSessionCommand());
-		cmds.add(1, interactUtil.createPostEventCommand2(postEvent));
+		cmds.add(0, interactUtil.createResponseEventCommand(postEvent));
 		
-		Command[] cmd_pe = { cmds.get(1) };
+		Command[] cmd_pe = { cmds.get(0) };
 		BatchResponse batchResponse = interactProcessor.executeBatchMethod(postEvent.getSessionId(),cmd_pe,connector);
 		System.out.println("Post event status " + batchResponse.getBatchStatusCode());
 		int peStatus= batchResponse.getBatchStatusCode();
 		
-		
-		Command[] cmd_end = { cmds.get(0) };
-		batchResponse = interactProcessor.executeBatchMethod(postEvent.getSessionId(),cmd_end,connector);
-		System.out.println("End " + batchResponse.getBatchStatusCode());
-		int endStatus= batchResponse.getBatchStatusCode();
-		
 		eventResponse.setPeStatus(peStatus);
-		eventResponse.setEndStatus(endStatus);
-				
+
 		return eventResponse;	
+	}
+	
+	@Path("/end")
+	@POST
+	@Consumes({"application/json"})
+	@Produces({"application/json"})	
+	public EventResponse endEvent(PostEvent postEvent) throws IOException, JSONException{
+		
+		List<Command> cmds = new ArrayList<Command>();
+		
+		RestClientConnector connector = new RestClientConnector(url);
+		
+		cmds.add(0, interactUtil.createEndSessionCommand());
+		Command[] cmd_end = { cmds.get(0) };
+		BatchResponse batchResponse = interactProcessor.executeBatchMethod(postEvent.getSessionId(),cmd_end,connector);
+		System.out.println("End " + batchResponse.getBatchStatusCode());
+		
+		eventResponse.setPeStatus(batchResponse.getBatchStatusCode());
+		
+	 return eventResponse;
 	}
 
 }

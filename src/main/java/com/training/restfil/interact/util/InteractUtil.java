@@ -50,17 +50,26 @@ public class InteractUtil {
 		return cmd;
 	}
 
-	public Command createPostEventCommand(String eventName){
+	public Command createPostEventCommand(PostEvent postEvent){
 		CommandImpl cmd = new CommandImpl();
 		cmd.setMethodIdentifier(Command.COMMAND_POSTEVENT);
-		cmd.setEvent(eventName);
+		cmd.setEvent(postEvent.getEventName());
+		
+	
+		NameValuePair treatmentCode = new NameValuePairImpl();
+		treatmentCode.setName("UACIOfferTrackingCode");
+		treatmentCode.setValueAsString(postEvent.getTreatmentCode());
+		treatmentCode.setValueDataType(NameValuePair.DATA_TYPE_STRING);
+		
+		NameValuePairImpl[] eventParameters =  { (NameValuePairImpl) treatmentCode};		
+		cmd.setEventParameters(eventParameters);		
+
 		return cmd;
 	}
 
 	
-	public Command createPostEventCommand2(PostEvent postEvent){
-		
-		
+	public Command createResponseEventCommand(PostEvent postEvent){
+			
 		CommandImpl cmd = new CommandImpl();
 		cmd.setMethodIdentifier(Command.COMMAND_POSTEVENT);
 		cmd.setEvent(postEvent.getEventName());
